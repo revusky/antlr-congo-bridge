@@ -4,200 +4,190 @@ ENSURE_FINAL_EOL;
 
 INCLUDE "ANTLR4Lexer.ccc"
 
+GrammarSpec :
+    GrammarDecl
+    (PrequelConstruct)*
+    (ParserRuleSpec | LexerRuleSpec)*
+    (ModeSpec)*
+    <EOF>
+;    
+
+GrammarDecl :
+    GrammarType
+    <IDENTIFIER>
+    <SEMICOLON>
+;    
+
+GrammarType :
+    [<LEXER>|<PARSER>] <GRAMMAR>
+;
+
+PrequelConstruct :
+    OptionsSpec
+    |
+    DelegateGrammars
+    |
+    TokensSpec
+    |
+    ChannelsSpec
+    |
+    Action_
+;
+
+OptionsSpec:
+    <OPTIONS>
+    (Option <SEMICOLON>)
+    <RBRACE>
+;
+
+Option :
+    <IDENTIFIER>
+    <ASSIGN>
+    OptionValue
+;    
+
+OptionValue :
+    <IDENTIFIER>
+    |
+    <STRING_LITERAL>
+    |
+    ActionBlock
+    |
+    <INT>
+;
+
+DelegateGrammars :
+    <IMPORT>
+    DelegateGrammar
+    (<COMMA> DelegateGrammar)*
+    <SEMICOLON>
+;    
+
+DelegateGrammar :
+   <IDENTIFIER> [<ASSIGN> <IDENTIFIER>]
+;   
+
+IdList :
+   <IDENTIFIER> (<COMMA> <IDENTIFIER> =>||) [<COMMA>]
+;
+
+TokensSpec :
+   <TOKENS> IdList <RBRACE>
+;
+
+ChannelsSpec :
+   <CHANNELS> [IdList] <RBRACE>
+;
+
+ModeSpec :
+   <MODE> <IDENTIFIER> <SEMICOLON> (LexerRuleSpec)*
+;
+
+ParserRuleSpec :
+   [RuleModifiers]
+   <IDENTIFIER>
+   [ArgActionBlock]
+   [RuleReturns]
+   [ThrowsSpec]
+   [LocalsSpec]
+   (RulePrequel)*
+   <COLON>
+   RuleBlock
+   <SEMICOLON>
+   ExceptionGroup
+;
+
+Action_ :
+   <AT> [ActionScopeName <COLONCOLON>] <IDENTIFIER> ActionBlock
+;
+
+ActionScopeName :
+    <IDENTIFIER>|<LEXER>|<PARSER>
+;
+
+ActionBlock :
+    <BEGIN_ACTION>
+    (<ACTION_CONTENT>)*
+    <END_ACTION>
+;
+
+ArgActionBlock :
+    <BEGIN_ARGUMENT>
+    (<ARGUMENT_CONTENT>)*
+    <END_ARGUMENT>
+;
+
+ExceptionGroup :
+   (ExceptionHandler)* [FinallyClause]
+;   
+
+ExceptionHandler :
+   <CATCH>
+   ArgActionBlock
+   ActionBlock
+;
+
+FinallyClause :
+   <FINALLY> ActionBlock
+;
+
+RulePrequel :
+   OptionsSpec | RuleAction
+;
+
+ThrowsSpec :
+    <THROWS>
+    <IDENTIFIER>
+    (<COMMA> <IDENTIFIER>)*
+;
+
+LocalsSpec :
+   <LOCALS> ArgActionBlock
+;
+
+RuleAction :
+   <AT> <IDENTIFIER> ActionBlock
+;
+
+RuleReturns :
+    <RETURNS> ArgActionBlock
+;
+
+RuleModifiers :
+    (<PUBLIC>|<PRIVATE>|<PROTECTED>|<FRAGMENT>)+
+;
+
+LexerRuleSpec :
+    [<FRAGMENT>]
+    <IDENTIFIER>
+    [OptionsSpec]
+    <COLON>
+    LexerRuleBlock
+    <SEMICOLON>
+;    
+
+RuleBlock :
+    LabeledAlt (<OR>LabeledAlt)*
+;
+
+LabeledAlt :
+    Alternative [<POUND><IDENTIFIER>]
+;
+
+Alternative :
+   [ElementOptions] (Element)*
+; 
+
+LexerRuleBlock :
+   LexerAlt (<OR> LexerAlt)*
+;
+
+LexerAlt :
+   [LexerElements [LexerCommands]]
+;   
+    
+
 #if false
-
-/*	A grammar for ANTLR v4 written in CongoCC
-parser grammar ANTLRv4Parser;
-
-
-options { tokenVocab = ANTLRv4Lexer; }
-// The main entry point for parsing a v4 grammar.
-grammarSpec
-   : grammarDecl prequelConstruct* rules modeSpec* EOF
-   ;
-
-grammarDecl
-   : grammarType identifier SEMI
-   ;
-
-grammarType
-   : (LEXER GRAMMAR | PARSER GRAMMAR | GRAMMAR)
-   ;
-   // This is the list of all constructs that can be declared before
-   // the set of rules that compose the grammar, and is invoked 0..n
-   // times by the grammarPrequel rule.
-
-prequelConstruct
-   : optionsSpec
-   | delegateGrammars
-   | tokensSpec
-   | channelsSpec
-   | action_
-   ;
-   // ------------
-   // Options - things that affect analysis and/or code generation
-
-optionsSpec
-   : OPTIONS (option SEMI)* RBRACE
-   ;
-
-option
-   : identifier ASSIGN optionValue
-   ;
-
-optionValue
-   : identifier (DOT identifier)*
-   | STRING_LITERAL
-   | actionBlock
-   | INT
-   ;
-   // ------------
-   // Delegates
-
-delegateGrammars
-   : IMPORT delegateGrammar (COMMA delegateGrammar)* SEMI
-   ;
-
-delegateGrammar
-   : identifier ASSIGN identifier
-   | identifier
-   ;
-   // ------------
-   // Tokens & Channels
-
-tokensSpec
-   : TOKENS idList? RBRACE
-   ;
-
-channelsSpec
-   : CHANNELS idList? RBRACE
-   ;
-
-idList
-   : identifier (COMMA identifier)* COMMA?
-   ;
-   // Match stuff like @parser::members {int i;}
-
-action_
-   : AT (actionScopeName COLONCOLON)? identifier actionBlock
-   ;
-   // Scope names could collide with keywords; allow them as ids for action scopes
-
-actionScopeName
-   : identifier
-   | LEXER
-   | PARSER
-   ;
-
-actionBlock
-   : BEGIN_ACTION ACTION_CONTENT* END_ACTION
-   ;
-
-argActionBlock
-   : BEGIN_ARGUMENT ARGUMENT_CONTENT* END_ARGUMENT
-   ;
-
-modeSpec
-   : MODE identifier SEMI lexerRuleSpec*
-   ;
-
-rules
-   : ruleSpec*
-   ;
-
-ruleSpec
-   : parserRuleSpec
-   | lexerRuleSpec
-   ;
-
-parserRuleSpec
-   : ruleModifiers? RULE_REF argActionBlock? ruleReturns? throwsSpec? localsSpec? rulePrequel* COLON ruleBlock SEMI exceptionGroup
-   ;
-
-exceptionGroup
-   : exceptionHandler* finallyClause?
-   ;
-
-exceptionHandler
-   : CATCH argActionBlock actionBlock
-   ;
-
-finallyClause
-   : FINALLY actionBlock
-   ;
-
-rulePrequel
-   : optionsSpec
-   | ruleAction
-   ;
-
-ruleReturns
-   : RETURNS argActionBlock
-   ;
-
-// --------------
-// Exception spec
-throwsSpec
-   : THROWS identifier (COMMA identifier)*
-   ;
-
-localsSpec
-   : LOCALS argActionBlock
-   ;
-
-/** Match stuff like @init {int i;} */
-ruleAction
-   : AT identifier actionBlock
-   ;
-
-ruleModifiers
-   : ruleModifier+
-   ;
-   // An individual access modifier for a rule. The 'fragment' modifier
-   // is an internal indication for lexer rules that they do not match
-   // from the input but are like subroutines for other lexer rules to
-   // reuse for certain lexical patterns. The other modifiers are passed
-   // to the code generation templates and may be ignored by the template
-   // if they are of no use in that language.
-
-ruleModifier
-   : PUBLIC
-   | PRIVATE
-   | PROTECTED
-   | FRAGMENT
-   ;
-
-ruleBlock
-   : ruleAltList
-   ;
-
-ruleAltList
-   : labeledAlt (OR labeledAlt)*
-   ;
-
-labeledAlt
-   : alternative (POUND identifier)?
-   ;
-   // --------------------
-   // Lexer rules
-
-lexerRuleSpec
-   : FRAGMENT? TOKEN_REF optionsSpec? COLON lexerRuleBlock SEMI
-   ;
-
-lexerRuleBlock
-   : lexerAltList
-   ;
-
-lexerAltList
-   : lexerAlt (OR lexerAlt)*
-   ;
-
-lexerAlt
-   : lexerElements lexerCommands?
-   |
-   // explicitly allow empty alts
-   ;
 
 lexerElements
    : lexerElement+
@@ -246,11 +236,6 @@ altList
    : alternative (OR alternative)*
    ;
 
-alternative
-   : elementOptions? element+
-   |
-   // explicitly allow empty alts
-   ;
 
 element
    : labeledElement (ebnfSuffix |)
@@ -344,11 +329,6 @@ elementOptions
 elementOption
    : identifier
    | identifier ASSIGN (identifier | STRING_LITERAL)
-   ;
-
-identifier
-   : RULE_REF
-   | TOKEN_REF
    ;
 
 #endif

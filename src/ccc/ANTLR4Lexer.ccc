@@ -1,7 +1,50 @@
+SKIP :
+  <WHITESPACE : (" "| "\t"| "\n"| "\r"| "\f")+> #Whitespace
+;
+
 UNPARSED #Comment :
   < ?BLOCK_COMMENT : "/*" (~[])* "*/" > #BlockComment
   |
   < LINE_COMMENT : "//" (~["\n"])* "\n" > #LineComment
+;
+
+TOKEN #Operator :
+  < COLON : ":" > #Colon
+  |
+  < DOUBLE_COLON : "::" > #DColon
+;
+
+TOKEN #Delimiter :
+  < COMMA : "," >
+  |
+  < SEMICOLON : ";" > 
+;
+
+TOKEN #Literal :
+  < #STRING_ESCAPE:
+      '\\'
+      (
+        ["n","t","b","r","f", "\\","'",'"']
+        |
+        "u" (<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?)?
+      )
+  >
+  |
+  < STRING_LITERAL:
+      "'"
+      (   (~["'","\\","\n","\r"])
+          |
+          <STRING_ESCAPE>
+      )*
+      "'"
+  > #StringLiteral
+
+;
+
+INCLUDE JAVA_IDENTIFIER_DEF
+
+TOKEN :
+  < IDENTIFIER : <JAVA_IDENTIFIER_START> (<JAVA_IDENTIFIER_PART>)* > #Identifier
 ;
 
 #if false
@@ -12,38 +55,12 @@ import LexBasic;
 
 // Standard set of fragments
 tokens { TOKEN_REF , RULE_REF , LEXER_CHAR_SET }
-channels { OFF_CHANNEL , COMMENT }
-
-// -------------------------
-// Comments
-DOC_COMMENT
-   : DocComment -> channel (COMMENT)
-   ;
-
-LINE_COMMENT
-   : LineComment -> channel (COMMENT)
-   ;
 
 // -------------------------
 // Integer
 
 INT
    : DecimalNumeral
-   ;
-
-// -------------------------
-// Literal string
-//
-// ANTLR makes no distinction between a single character literal and a
-// multi-character string. All literals are single quote delimited and
-// may contain unicode escape sequences of the form \uxxxx, where x
-// is a valid hexadecimal number (per Unicode standard).
-STRING_LITERAL
-   : SQuoteLiteral
-   ;
-
-UNTERMINATED_STRING_LITERAL
-   : USQuoteLiteral
    ;
 
 // -------------------------
@@ -134,18 +151,6 @@ MODE
    // -------------------------
    // Punctuation
 
-COLON
-   : Colon
-   ;
-
-COLONCOLON
-   : DColon
-   ;
-
-COMMA
-   : Comma
-   ;
-
 SEMI
    : Semi
    ;
@@ -227,12 +232,6 @@ NOT
    ;
    // -------------------------
    // Identifiers - allows unicode rule/token names
-
-ID
-   : Id
-   ;
-   // -------------------------
-   // Whitespace
 
 WS
    : Ws+ -> channel (OFF_CHANNEL)
@@ -360,54 +359,16 @@ UNTERMINATED_CHAR_SET
    : EOF -> popMode
    ;
 
-// ------------------------------------------------------------------------------
-// Grammar specific Keywords, Punctuation, etc.
-fragment Id
-   : NameStartChar NameChar*
-   ;
-
-
-
-lexer grammar LexBasic;
+//lexer grammar LexBasic;
 // ======================================================
 // Lexer fragments
 //
 // -----------------------------------
 // Whitespace & Comments
 
-fragment Ws
-   : Hws
-   | Vws
-   ;
-
-fragment Hws
-   : [ \t]
-   ;
-
-fragment Vws
-   : [\r\n\f]
-   ;
-
-fragment LineComment
-   : '//' ~ [\r\n]*
-   ;
-   // -----------------------------------
-   // Escapes
-   // Any kind of escaped character that we can embed within ANTLR literal strings.
-
-fragment EscSeq
-   : Esc ([btnfr"'\\] | UnicodeEsc | . | EOF)
-   ;
-
 fragment EscAny
    : Esc .
    ;
-
-fragment UnicodeEsc
-   : 'u' (HexDigit (HexDigit (HexDigit HexDigit?)?)?)?
-   ;
-   // -----------------------------------
-   // Numerals
 
 fragment DecimalNumeral
    : '0'
@@ -449,34 +410,6 @@ fragment USQuoteLiteral
    // -----------------------------------
    // Character ranges
 
-fragment NameChar
-   : NameStartChar
-   | '0' .. '9'
-   | Underscore
-   | '\u00B7'
-   | '\u0300' .. '\u036F'
-   | '\u203F' .. '\u2040'
-   ;
-
-fragment NameStartChar
-   : 'A' .. 'Z'
-   | 'a' .. 'z'
-   | '\u00C0' .. '\u00D6'
-   | '\u00D8' .. '\u00F6'
-   | '\u00F8' .. '\u02FF'
-   | '\u0370' .. '\u037D'
-   | '\u037F' .. '\u1FFF'
-   | '\u200C' .. '\u200D'
-   | '\u2070' .. '\u218F'
-   | '\u2C00' .. '\u2FEF'
-   | '\u3001' .. '\uD7FF'
-   | '\uF900' .. '\uFDCF'
-   | '\uFDF0' .. '\uFFFD'
-   ;
-   // ignores | ['\u10000-'\uEFFFF] ;
-   // -----------------------------------
-   // Types
-
 fragment Int
    : 'int'
    ;
@@ -489,10 +422,6 @@ fragment Esc
 
 fragment Colon
    : ':'
-   ;
-
-fragment DColon
-   : '::'
    ;
 
 fragment SQuote
