@@ -9,18 +9,100 @@ UNPARSED #Comment :
 ;
 
 TOKEN #Operator :
+  < ASSIGN : "=" >
+  |
+  < AT : "@" > 
+  |
   < COLON : ":" > #Colon
   |
   < DOUBLE_COLON : "::" > #DColon
+  |
+  < NOT : "~"> #Tilde
+  |
+  < OR : "|" > #Pipe
+  |
+  < POUND : "#"> #Pound
+  |
+  < PLUS : "+" > #Plus
+  |
+  < PLUS_ASSIGN : "+=" > #PlusAssign 
+  |
+  < QUESTION : "?" > #Question
+  |
+  < RANGE : ".." > #Range
+  |
+  < RARROW : "->" > #RArrow
+  |
+  < STAR : "*" > #Star
 ;
 
 TOKEN #Delimiter :
   < COMMA : "," >
   |
+  < DOT : "." > 
+  |
+  < LBRACE : "{">
+  |
+  < LBRACKET : "[">
+  |
+  < LPAREN : "(" >
+  |
+  < LT : "<" >
+  |
+  < GT : ">" >
+  |
+  < RBRACE : "}">
+  |
+  < RBRACKET : "]">
+  |
+  < RPAREN : ")" >
+  |
   < SEMICOLON : ";" > 
 ;
 
+TOKEN #Keyword :
+  <CATCH : "catch">
+  |
+  <CHANNELS : "channels" (<WHITESPACE>) "{"> #Channels
+  |
+  <FINALLY : "finally">
+  |
+  <FRAGMENT : "fragment">
+  |
+  <GRAMMAR : "grammar">
+  |
+  <IMPORT : "import">
+  |
+  <LEXER : "lexer">
+  |
+  <LOCALS : "locals">
+  |
+  <MODE : "mode">
+  |
+  <OPTIONS : "options" (<WHITESPACE>) "{"> #Options
+  |
+  <PARSER : "parser">
+  |
+  <PRIVATE : "private">
+  |
+  <PROTECTED : "protected">
+  |
+  <PUBLIC : "public">
+  |
+  <RETURNS : "returns">
+  |
+  <THROW : "throw">
+  |
+  <THROWS : "throws">
+  |
+  <TOKENS : "tokens" (<WHITESPACE>) "{"> #Tokens
+;
+
 TOKEN #Literal :
+  < INT: "0" | ["1"-"9"](["0"-"9"])* > #DecimalNumeral
+  |  
+  < #HEX_DIGIT : ["0"-"9","a"-"f","A"-"F"]>
+  |
   < #STRING_ESCAPE:
       '\\'
       (
@@ -93,56 +175,8 @@ CHANNELS     : 'channels' WSNLCHARS* '{'  ;
 
 fragment WSNLCHARS : ' ' | '\t' | '\f' | '\n' | '\r' ;
 
-IMPORT
-   : 'import'
-   ;
-
-FRAGMENT
-   : 'fragment'
-   ;
-
-LEXER
-   : 'lexer'
-   ;
-
-PARSER
-   : 'parser'
-   ;
-
-GRAMMAR
-   : 'grammar'
-   ;
-
-PROTECTED
-   : 'protected'
-   ;
-
-PUBLIC
-   : 'public'
-   ;
-
-PRIVATE
-   : 'private'
-   ;
-
 RETURNS
    : 'returns'
-   ;
-
-LOCALS
-   : 'locals'
-   ;
-
-THROWS
-   : 'throws'
-   ;
-
-CATCH
-   : 'catch'
-   ;
-
-FINALLY
-   : 'finally'
    ;
 
 MODE
@@ -150,18 +184,6 @@ MODE
    ;
    // -------------------------
    // Punctuation
-
-SEMI
-   : Semi
-   ;
-
-LPAREN
-   : LParen
-   ;
-
-RPAREN
-   : RParen
-   ;
 
 LBRACE
    : LBrace
@@ -171,52 +193,12 @@ RBRACE
    : RBrace
    ;
 
-RARROW
-   : RArrow
-   ;
-
-LT
-   : Lt
-   ;
-
-GT
-   : Gt
-   ;
-
 ASSIGN
    : Equal
    ;
 
-QUESTION
-   : Question
-   ;
-
-STAR
-   : Star
-   ;
-
-PLUS_ASSIGN
-   : PlusAssign
-   ;
-
-PLUS
-   : Plus
-   ;
-
 OR
    : Pipe
-   ;
-
-DOLLAR
-   : Dollar
-   ;
-
-RANGE
-   : Range
-   ;
-
-DOT
-   : Dot
    ;
 
 AT
@@ -355,10 +337,6 @@ LEXER_CHAR_SET
    : RBrack -> popMode
    ;
 
-UNTERMINATED_CHAR_SET
-   : EOF -> popMode
-   ;
-
 //lexer grammar LexBasic;
 // ======================================================
 // Lexer fragments
@@ -460,24 +438,8 @@ fragment RArrow
    : '->'
    ;
 
-fragment Lt
-   : '<'
-   ;
-
-fragment Gt
-   : '>'
-   ;
-
 fragment Equal
    : '='
-   ;
-
-fragment Question
-   : '?'
-   ;
-
-fragment Star
-   : '*'
    ;
 
 fragment Plus
@@ -500,31 +462,8 @@ fragment Dollar
    : '$'
    ;
 
-fragment Comma
-   : ','
-   ;
-
-fragment Semi
-   : ';'
-   ;
-
-fragment Dot
-   : '.'
-   ;
-
 fragment Range
    : '..'
    ;
 
-fragment At
-   : '@'
-   ;
-
-fragment Pound
-   : '#'
-   ;
-
-fragment Tilde
-   : '~'
-   ;
 #endif

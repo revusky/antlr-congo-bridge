@@ -4,10 +4,30 @@ ENSURE_FINAL_EOL;
 
 INCLUDE "ANTLR4Lexer.ccc"
 
+INJECT PARSER_CLASS :
+   import java.nio.file.FileSystems;
+{
+   static public void main(String[] args) throws IOException {
+     if (args.length == 0) {
+      usage();
+      return;
+     }
+     Path path = FileSystems.getDefault().getPath(args[0]);
+     PARSER_CLASS parser = new PARSER_CLASS(path);
+     parser.GrammarSpec();
+     Node root = parser.rootNode();
+     root.dump();
+   }
+
+   static void usage() {
+      System.out.println("java Antlr4Parser <FILENAME>");
+   }
+}
+
 GrammarSpec :
     GrammarDecl
     (PrequelConstruct)*
-    (ParserRuleSpec | LexerRuleSpec)*
+    (ParserRuleSpec =>|| | LexerRuleSpec)*
     (ModeSpec)*
     <EOF>
 ;    
@@ -68,7 +88,7 @@ DelegateGrammar :
 ;   
 
 IdList :
-   <IDENTIFIER> (<COMMA> <IDENTIFIER> =>||) [<COMMA>]
+   <IDENTIFIER> (<COMMA> <IDENTIFIER> =>||)* [<COMMA>]
 ;
 
 TokensSpec :
@@ -98,7 +118,7 @@ ParserRuleSpec :
 ;
 
 Action_ :
-   <AT> [ActionScopeName <COLONCOLON>] <IDENTIFIER> ActionBlock
+   <AT> [ActionScopeName <DOUBLE_COLON>] <IDENTIFIER> ActionBlock
 ;
 
 ActionScopeName :
@@ -106,15 +126,18 @@ ActionScopeName :
 ;
 
 ActionBlock :
-    <BEGIN_ACTION>
-    (<ACTION_CONTENT>)*
-    <END_ACTION>
+    <LBRACE>
+    // TODO: Need a bit of fancy lexical stuff
+    //(<ACTION_CONTENT>)*
+    <RBRACE>
 ;
 
 ArgActionBlock :
-    <BEGIN_ARGUMENT>
-    (<ARGUMENT_CONTENT>)*
-    <END_ARGUMENT>
+    <LBRACKET>
+    // REVISIT: Need a lexical state change
+    // TODO: Need a bit of fancy lexical stuff
+    //(<ARGUMENT_CONTENT>)*
+    <RBRACKET>
 ;
 
 ExceptionGroup :
@@ -176,159 +199,140 @@ LabeledAlt :
 
 Alternative :
    [ElementOptions] (Element)*
-; 
+;
+
+AltList :
+   Alternative (<OR> Alternative)*
+;
 
 LexerRuleBlock :
    LexerAlt (<OR> LexerAlt)*
 ;
 
 LexerAlt :
-   [LexerElements [LexerCommands]]
-;   
-    
+   [(LexerElement)+ [LexerCommands]]
+; 
 
-#if false
-
-lexerElements
-   : lexerElement+
+LexerElement :
+   LabeledLexerElement [EbnfSuffix]
    |
-   ;
+   LexerAtom [EbnfSuffix]
+   |
+   LexerBlock [EbnfSuffix]
+   |
+   ActionBlock [<QUESTION>]
+;
+    
+EbnfSuffix :
+   <QUESTION> [<QUESTION>]
+   | 
+   <STAR> [<QUESTION>]
+   | 
+   <PLUS> [<QUESTION>]
+;
 
-lexerElement
-   : labeledLexerElement ebnfSuffix?
-   | lexerAtom ebnfSuffix?
-   | lexerBlock ebnfSuffix?
-   | actionBlock QUESTION?
-   ;
-   // but preds can be anywhere
+LexerBlock :
+   <LPAREN> LexerRuleBlock <RPAREN>
+;
 
-labeledLexerElement
-   : identifier (ASSIGN | PLUS_ASSIGN) (lexerAtom | lexerBlock)
-   ;
+CharacterRange :
+   <STRING_LITERAL> <RANGE> =>|| <STRING_LITERAL>
+;   
 
-lexerBlock
-   : LPAREN lexerAltList RPAREN
-   ;
-   // E.g., channel(HIDDEN), skip, more, mode(INSIDE), push(INSIDE), pop
+Terminal :
+   <IDENTIFIER> [ElementOptions]
+   |
+   <STRING_LITERAL> [ElementOptions]
+ ;
 
-lexerCommands
-   : RARROW lexerCommand (COMMA lexerCommand)*
-   ;
+ElementOptions :
+   <LT> ElementOption (<COMMA> ElementOption)* <GT>
+;
 
-lexerCommand
-   : lexerCommandName LPAREN lexerCommandExpr RPAREN
-   | lexerCommandName
-   ;
+ElementOption : 
+   <IDENTIFIER> [<ASSIGN> (<IDENTIFIER> | <STRING_LITERAL>)]
+;
 
-lexerCommandName
-   : identifier
-   | MODE
-   ;
+LexerAtom : 
+   CharacterRange
+   | 
+   Terminal
+   | 
+   NotSet
+   |
+   <LBRACKET>
+   //LEXICAL_STATE LexerCharSet
+   //(<LEXER_CHAR_SET>)
+   // TODO: Handle in-line LEXER_CHAR_SET 
+   <RBRACKET>
+   | 
+   <DOT> [ElementOptions]
+;
 
-lexerCommandExpr
-   : identifier
-   | INT
-   ;
-   // --------------------
-   // Rule Alts
+NotSet : 
+   <NOT> (SetElement | BlockSet)
+;
 
-altList
-   : alternative (OR alternative)*
-   ;
+BlockSet : 
+   <LPAREN> SetElement (<OR> SetElement)* <RPAREN>
+;
 
+SetElement : 
+   <IDENTIFIER> [ElementOptions]
+   | 
+   <STRING_LITERAL> [ElementOptions]
+   | 
+   CharacterRange
+   | 
+   <RBRACKET>
+;
 
-element
-   : labeledElement (ebnfSuffix |)
-   | atom (ebnfSuffix |)
-   | ebnf
-   | actionBlock QUESTION?
-   ;
+Element : 
+   LabeledElement [EbnfSuffix]
+   | 
+   Atom [EbnfSuffix]
+   | 
+   Ebnf
+   | 
+   ActionBlock <QUESTION>
+;
 
-labeledElement
-   : identifier (ASSIGN | PLUS_ASSIGN) (atom | block)
-   ;
-   // --------------------
-   // EBNF and blocks
+LabeledElement : 
+    <IDENTIFIER> (<ASSIGN> | <PLUS_ASSIGN>) =>|| (Atom | Block)
+;
 
-ebnf
-   : block blockSuffix?
-   ;
+Atom :
+   Ruleref
+   | 
+   Terminal
+   | 
+   NotSet
+   | 
+   <DOT> [ElementOptions]
+;
 
-blockSuffix
-   : ebnfSuffix
-   ;
+Ebnf : 
+   Block [EbnfSuffix]
+;
 
-ebnfSuffix
-   : QUESTION QUESTION?
-   | STAR QUESTION?
-   | PLUS QUESTION?
-   ;
+Ruleref : 
+   <IDENTIFIER> [ArgActionBlock] [ElementOptions]
+;
 
-lexerAtom
-   : characterRange
-   | terminal
-   | notSet
-   | LEXER_CHAR_SET
-   | DOT elementOptions?
-   ;
+Block : 
+   <LPAREN> 
+   [[OptionsSpec] (RuleAction)* <COLON>] AltList 
+   <RPAREN>
+;
 
-atom
-   : terminal
-   | ruleref
-   | notSet
-   | DOT elementOptions?
-   ;
+LexerCommand :
+  (<IDENTIFIER>|<MODE>) [<LPAREN> (<IDENTIFIER>|<INT>) <RPAREN>]
+;
 
-// --------------------
-// Inverted element set
-notSet
-   : NOT setElement
-   | NOT blockSet
-   ;
+LabeledLexerElement :
+   <IDENTIFIER> (<ASSIGN> | <PLUS_ASSIGN>) =>|| (LexerAtom | LexerBlock)
+;
 
-blockSet
-   : LPAREN setElement (OR setElement)* RPAREN
-   ;
-
-setElement
-   : TOKEN_REF elementOptions?
-   | STRING_LITERAL elementOptions?
-   | characterRange
-   | LEXER_CHAR_SET
-   ;
-
-// -------------
-// Grammar Block
-block
-   : LPAREN (optionsSpec? ruleAction* COLON)? altList RPAREN
-   ;
-
-// ----------------
-// Parser rule ref
-ruleref
-   : RULE_REF argActionBlock? elementOptions?
-   ;
-
-// ---------------
-// Character Range
-characterRange
-   : STRING_LITERAL RANGE STRING_LITERAL
-   ;
-
-terminal
-   : TOKEN_REF elementOptions?
-   | STRING_LITERAL elementOptions?
-   ;
-
-// Terminals may be adorned with certain options when
-// reference in the grammar: TOK<,,,>
-elementOptions
-   : LT elementOption (COMMA elementOption)* GT
-   ;
-
-elementOption
-   : identifier
-   | identifier ASSIGN (identifier | STRING_LITERAL)
-   ;
-
-#endif
+LexerCommands : 
+   <RARROW> LexerCommand (<COMMA> LexerCommand)*
+;
