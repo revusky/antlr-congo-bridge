@@ -108,7 +108,7 @@ TOKEN #Literal :
       (
         ["n","t","b","r","f", "\\","'",'"']
         |
-        "u" <HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?
+        "u" (<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?)?
       )
   >
   |
