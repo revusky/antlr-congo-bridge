@@ -170,9 +170,7 @@ ActionBlock :
 
 ArgActionBlock :
     <LBRACKET>
-    // REVISIT: Need a lexical state change
-    // TODO: Need a bit of fancy lexical stuff
-    //(<ARGUMENT_CONTENT>)*
+    LEXICAL_STATE IN_ARG_ACTION_BLOCK (<ARG_ACTION>)
     <RBRACKET>
 ;
 

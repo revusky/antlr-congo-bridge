@@ -140,12 +140,8 @@ TOKEN :
 ;
 
 
-<IN_ACTION_BLOCK>
+<IN_ACTION_BLOCK,IN_ARG_ACTION_BLOCK>
 UNPARSED :
-   <#DQSTRING_LITERAL : '"' (~['"'] | '\\"')* '"'>
-   |
-   < SLITERAL : <STRING_LITERAL> | <DQSTRING_LITERAL> >
-   |
    < OPEN_CURLY : "{"> {braceNesting++;}
 ;
 
@@ -162,9 +158,26 @@ TOKEN :
         }
    }
 ;
+<IN_ARG_ACTION_BLOCK>
+TOKEN :
+   < ARG_ACTION : "]"> {
+        if (braceNesting >0) {
+           braceNesting--;
+           matchedToken.setUnparsed(true);
+        }
+        else {
+           matchedToken.setBeginOffset(actionBlockStart);
+           matchedToken.truncate(1);
+        }
+   }
+;
 
-<IN_ACTION_BLOCK>
+<IN_ACTION_BLOCK, IN_ARG_ACTION_BLOCK>
 SKIP :
+   <#DQSTRING_LITERAL : '"' (~['"'] | '\\"')* '"'>
+   |
+   < SLITERAL : <STRING_LITERAL> | <DQSTRING_LITERAL> >
+   |
    < ANY : ~[] >
 ;
 
