@@ -7,16 +7,36 @@ INCLUDE "ANTLR4Lexer.ccc"
 INJECT PARSER_CLASS :
    import java.nio.file.FileSystems;
 {
-   static public void main(String[] args) throws IOException {
+   static public void main(String[] args) {
      if (args.length == 0) {
       usage();
       return;
      }
-     Path path = FileSystems.getDefault().getPath(args[0]);
+     int successfulParses = 0;
+     int unsuccessfulParses = 0;
+     for (int i = 0;i<args.length;i++) {
+        try {
+           Node root = parseFile(args[i]);
+           System.out.println("Parsed " + args[i] + " successfully.");
+           if (args.length == 1) root.dump();
+           successfulParses++;
+        } catch (Exception e) {
+           System.out.println("Failed on " + args[i]);
+           e.printStackTrace();
+           unsuccessfulParses++;
+        }
+     }
+     System.out.println("Successfully parsed " + successfulParses + " files.");
+     System.out.println("Failed on " + unsuccessfulParses + " files.");
+   }
+
+   static Node parseFile(String name) throws IOException {
+     Path path = FileSystems.getDefault().getPath(name);
      PARSER_CLASS parser = new PARSER_CLASS(path);
      parser.GrammarSpec();
-     Node root = parser.rootNode();
-     root.dump();
+     return parser.rootNode();
+     //Node root = parser.rootNode();
+     //root.dump();
    }
 
    static void usage() {
@@ -27,7 +47,8 @@ INJECT PARSER_CLASS :
 GrammarSpec :
     GrammarDecl
     (PrequelConstruct)*
-    (ParserRuleSpec =>|| | LexerRuleSpec)*
+    (LexerRuleSpec =>|| | ParserRuleSpec)*
+//    (ParserRuleSpec =>|| | LexerRuleSpec)*
     (ModeSpec)*
     <EOF>
 ;    
@@ -56,7 +77,7 @@ PrequelConstruct :
 
 OptionsSpec:
     <OPTIONS>
-    (Option <SEMICOLON>)
+    (Option <SEMICOLON>)*
     <RBRACE>
 ;
 
@@ -117,6 +138,15 @@ ParserRuleSpec :
    ExceptionGroup
 ;
 
+LexerRuleSpec :
+    [<FRAGMENT>]
+    <IDENTIFIER>
+    [OptionsSpec]
+    <COLON>
+    LexerRuleBlock
+    <SEMICOLON>
+;    
+
 Action_ :
    <AT> [ActionScopeName <DOUBLE_COLON>] <IDENTIFIER> ActionBlock
 ;
@@ -126,9 +156,8 @@ ActionScopeName :
 ;
 
 ActionBlock :
-    <LBRACE>
-    // TODO: Need a bit of fancy lexical stuff
-    //(<ACTION_CONTENT>)*
+    <LBRACE> {token_source.setActionBlockStart(1+lastConsumedToken.getBeginOffset());}
+    LEXICAL_STATE IN_ACTION_BLOCK (<ACTION>)
     <RBRACE>
 ;
 
@@ -179,15 +208,6 @@ RuleReturns :
 RuleModifiers :
     (<PUBLIC>|<PRIVATE>|<PROTECTED>|<FRAGMENT>)+
 ;
-
-LexerRuleSpec :
-    [<FRAGMENT>]
-    <IDENTIFIER>
-    [OptionsSpec]
-    <COLON>
-    LexerRuleBlock
-    <SEMICOLON>
-;    
 
 RuleBlock :
     LabeledAlt (<OR>LabeledAlt)*
@@ -260,14 +280,16 @@ LexerAtom :
    | 
    NotSet
    |
-   <LBRACKET>
-   //LEXICAL_STATE LexerCharSet
-   //(<LEXER_CHAR_SET>)
-   // TODO: Handle in-line LEXER_CHAR_SET 
-   <RBRACKET>
+   LexerCharSet
    | 
    <DOT> [ElementOptions]
 ;
+
+LexerCharSet :
+   <LBRACKET>
+   LEXICAL_STATE IN_LEXER_CHAR_SET (<CONTENT>)
+   <RBRACKET>
+;   
 
 NotSet : 
    <NOT> (SetElement | BlockSet)
@@ -280,11 +302,11 @@ BlockSet :
 SetElement : 
    <IDENTIFIER> [ElementOptions]
    | 
-   <STRING_LITERAL> [ElementOptions]
-   | 
    CharacterRange
    | 
-   <RBRACKET>
+   <STRING_LITERAL> [ElementOptions]
+   |
+   LexerCharSet
 ;
 
 Element : 

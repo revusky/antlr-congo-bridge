@@ -108,7 +108,7 @@ TOKEN #Literal :
       (
         ["n","t","b","r","f", "\\","'",'"']
         |
-        "u" (<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?)?
+        "u" <HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?
       )
   >
   |
@@ -129,341 +129,41 @@ TOKEN :
   < IDENTIFIER : <JAVA_IDENTIFIER_START> (<JAVA_IDENTIFIER_PART>)* > #Identifier
 ;
 
-#if false
-lexer grammar ANTLRv4Lexer;
-
-options { superClass = LexerAdaptor; }
-import LexBasic;
-
-// Standard set of fragments
-tokens { TOKEN_REF , RULE_REF , LEXER_CHAR_SET }
-
-// -------------------------
-// Integer
-
-INT
-   : DecimalNumeral
-   ;
-
-// -------------------------
-// Arguments
-//
-// Certain argument lists, such as those specifying call parameters
-// to a rule invocation, or input parameters to a rule specification
-// are contained within square brackets.
-BEGIN_ARGUMENT
-   : LBrack
-   { this.handleBeginArgument(); }
-   ;
-
-// -------------------------
-// Target Language Actions
-BEGIN_ACTION
-   : LBrace -> pushMode (TargetLanguageAction)
-   ;
-
-// -------------------------
-// Keywords
-//
-// 'options', 'tokens', and 'channels' are considered keywords
-// but only when followed by '{', and considered as a single token.
-// Otherwise, the symbols are tokenized as RULE_REF and allowed as
-// an identifier in a labeledElement.
-OPTIONS      : 'options'  WSNLCHARS* '{'  ;
-TOKENS       : 'tokens'   WSNLCHARS* '{'  ;
-CHANNELS     : 'channels' WSNLCHARS* '{'  ;
-
-fragment WSNLCHARS : ' ' | '\t' | '\f' | '\n' | '\r' ;
-
-RETURNS
-   : 'returns'
-   ;
-
-MODE
-   : 'mode'
-   ;
-   // -------------------------
-   // Punctuation
-
-LBRACE
-   : LBrace
-   ;
-
-RBRACE
-   : RBrace
-   ;
-
-ASSIGN
-   : Equal
-   ;
-
-OR
-   : Pipe
-   ;
-
-AT
-   : At
-   ;
-
-POUND
-   : Pound
-   ;
-
-NOT
-   : Tilde
-   ;
-   // -------------------------
-   // Identifiers - allows unicode rule/token names
-
-WS
-   : Ws+ -> channel (OFF_CHANNEL)
-   ;
-
-// -------------------------
-// Illegal Characters
-//
-// This is an illegal character trap which is always the last rule in the
-// lexer specification. It matches a single character of any value and being
-// the last rule in the file will match when no other rule knows what to do
-// about the character. It is reported as an error but is not passed on to the
-// parser. This means that the parser to deal with the gramamr file anyway
-// but we will not try to analyse or code generate from a file with lexical
-// errors.
-
-// Comment this rule out to allow the error to be propagated to the parser
-ERRCHAR
-   : . -> channel (HIDDEN)
-   ;
-
-// ======================================================
-// Lexer modes
-// -------------------------
-// Arguments
-mode Argument;
-// E.g., [int x, List<String> a[]]
-NESTED_ARGUMENT
-   : LBrack -> type (ARGUMENT_CONTENT) , pushMode (Argument)
-   ;
-
-ARGUMENT_ESCAPE
-   : EscAny -> type (ARGUMENT_CONTENT)
-   ;
-
-ARGUMENT_STRING_LITERAL
-   : DQuoteLiteral -> type (ARGUMENT_CONTENT)
-   ;
-
-ARGUMENT_CHAR_LITERAL
-   : SQuoteLiteral -> type (ARGUMENT_CONTENT)
-   ;
-
-END_ARGUMENT
-   : RBrack
-   { this.handleEndArgument(); }
-   ;
-
-// added this to return non-EOF token type here. EOF does something weird
-UNTERMINATED_ARGUMENT
-   : EOF -> popMode
-   ;
-
-ARGUMENT_CONTENT
-   : .
-   ;
-
-// TODO: This grammar and the one used in the Intellij Antlr4 plugin differ
-// for "actions". This needs to be resolved at some point.
-// The Intellij Antlr4 grammar is here:
-// https://github.com/antlr/intellij-plugin-v4/blob/1f36fde17f7fa63cb18d7eeb9cb213815ac658fb/src/main/antlr/org/antlr/intellij/plugin/parser/ANTLRv4Lexer.g4#L587
-
-// -------------------------
-// Target Language Actions
-//
-// Many language targets use {} as block delimiters and so we
-// must recursively match {} delimited blocks to balance the
-// braces. Additionally, we must make some assumptions about
-// literal string representation in the target language. We assume
-// that they are delimited by ' or " and so consume these
-// in their own alts so as not to inadvertantly match {}.
-mode TargetLanguageAction;
-NESTED_ACTION
-   : LBrace -> type (ACTION_CONTENT) , pushMode (TargetLanguageAction)
-   ;
-
-ACTION_ESCAPE
-   : EscAny -> type (ACTION_CONTENT)
-   ;
-
-ACTION_STRING_LITERAL
-   : DQuoteLiteral -> type (ACTION_CONTENT)
-   ;
-
-ACTION_CHAR_LITERAL
-   : SQuoteLiteral -> type (ACTION_CONTENT)
-   ;
-
-ACTION_DOC_COMMENT
-   : DocComment -> type (ACTION_CONTENT)
-   ;
-
-ACTION_BLOCK_COMMENT
-   : BlockComment -> type (ACTION_CONTENT)
-   ;
-
-ACTION_LINE_COMMENT
-   : LineComment -> type (ACTION_CONTENT)
-   ;
-
-END_ACTION
-   : RBrace
-   { this.handleEndAction(); }
-   ;
-
-UNTERMINATED_ACTION
-   : EOF -> popMode
-   ;
-
-ACTION_CONTENT
-   : .
-   ;
-
-// -------------------------
-mode LexerCharSet;
-LEXER_CHAR_SET_BODY
-   : (~ [\]\\] | EscAny)+ -> more
-   ;
-
-LEXER_CHAR_SET
-   : RBrack -> popMode
-   ;
-
-//lexer grammar LexBasic;
-// ======================================================
-// Lexer fragments
-//
-// -----------------------------------
-// Whitespace & Comments
-
-fragment EscAny
-   : Esc .
-   ;
-
-fragment DecimalNumeral
-   : '0'
-   | [1-9] DecDigit*
-   ;
-   // -----------------------------------
-   // Digits
-
-fragment HexDigit
-   : [0-9a-fA-F]
-   ;
-
-fragment DecDigit
-   : [0-9]
-   ;
-   // -----------------------------------
-   // Literals
-
-fragment BoolLiteral
-   : 'true'
-   | 'false'
-   ;
-
-fragment CharLiteral
-   : SQuote (EscSeq | ~ ['\r\n\\]) SQuote
-   ;
-
-fragment SQuoteLiteral
-   : SQuote (EscSeq | ~ ['\r\n\\])* SQuote
-   ;
-
-fragment DQuoteLiteral
-   : DQuote (EscSeq | ~ ["\r\n\\])* DQuote
-   ;
-
-fragment USQuoteLiteral
-   : SQuote (EscSeq | ~ ['\r\n\\])*
-   ;
-   // -----------------------------------
-   // Character ranges
-
-fragment Int
-   : 'int'
-   ;
-   // -----------------------------------
-   // Symbols
-
-fragment Esc
-   : '\\'
-   ;
-
-fragment Colon
-   : ':'
-   ;
-
-fragment SQuote
-   : '\''
-   ;
-
-fragment DQuote
-   : '"'
-   ;
-
-fragment LParen
-   : '('
-   ;
-
-fragment RParen
-   : ')'
-   ;
-
-fragment LBrace
-   : '{'
-   ;
-
-fragment RBrace
-   : '}'
-   ;
-
-fragment LBrack
-   : '['
-   ;
-
-fragment RBrack
-   : ']'
-   ;
-
-fragment RArrow
-   : '->'
-   ;
-
-fragment Equal
-   : '='
-   ;
-
-fragment Plus
-   : '+'
-   ;
-
-fragment PlusAssign
-   : '+='
-   ;
-
-fragment Underscore
-   : '_'
-   ;
-
-fragment Pipe
-   : '|'
-   ;
-
-fragment Dollar
-   : '$'
-   ;
-
-fragment Range
-   : '..'
-   ;
-
-#endif
+<IN_LEXER_CHAR_SET>
+MORE :
+   < (~["\\","]","\\"] | ("\\" ~["\n","\r"]))+>
+;
+
+<IN_LEXER_CHAR_SET>
+TOKEN :
+   <CONTENT : "]" > {matchedToken.truncate(1);}
+;
+
+<IN_ACTION_BLOCK>
+UNPARSED :
+   < SCHMOO : (~["{","}"])+ >
+   |
+   < OPEN_CURLY : "{"> {braceNesting++;}
+;
+
+<IN_ACTION_BLOCK>
+TOKEN :
+   < ACTION : "}"> {
+        if (braceNesting >0) {
+           braceNesting--;
+           matchedToken.setUnparsed(true);
+        }
+        else {
+           matchedToken.setBeginOffset(actionBlockStart);
+           matchedToken.truncate(1);
+        }
+   }
+;
+
+INJECT LEXER_CLASS : {
+   private int actionBlockStart, braceNesting;
+
+   void setActionBlockStart(int actionBlockStart) {
+       this.actionBlockStart = actionBlockStart;
+   }
+}
