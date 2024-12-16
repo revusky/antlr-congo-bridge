@@ -235,7 +235,7 @@ LexerRuleBlock :
 ;
 
 LexerAlt :
-   [(LexerElement)+ [LexerCommands]]
+   (LexerElement)* [LexerCommands]
 ; 
 
 LexerElement :
