@@ -321,7 +321,7 @@ Element :
    | 
    Ebnf
    | 
-   ActionBlock <QUESTION>
+   ActionBlock [<QUESTION>]
 ;
 
 LabeledElement : 
