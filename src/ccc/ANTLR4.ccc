@@ -1,54 +1,16 @@
 #if false
-   A Congo grammar for ANTLR4 grammars. 
+   A Congo grammar for ANTLR4 grammars.
+   It can parse (and build an AST for)
+   all the grammars in the ANTLR4 grammar
+   repository: https://github.com/antlr/grammars-v4
    This is free to use, though acknowledgement
    would be nice.
 #endif
 
 DEFAULT_LEXICAL_STATE=ANTLR;
+SMART_NODE_CREATION=false;
 TAB_SIZE=4;
 ENSURE_FINAL_EOL;
-
-INJECT PARSER_CLASS :
-   import java.nio.file.FileSystems;
-{
-   static public void main(String[] args) {
-     if (args.length == 0) {
-      usage();
-      return;
-     }
-     int successfulParses = 0;
-     java.util.List<String> failures = new ArrayList<>();
-     for (int i = 0;i<args.length;i++) {
-        try {
-           Node root = parseFile(args[i]);
-           System.out.println("Parsed " + args[i] + " successfully.");
-           if (args.length == 1) root.dump();
-           successfulParses++;
-        } catch (Exception e) {
-           System.out.println("Failed on " + args[i]);
-           e.printStackTrace();
-           failures.add(args[i]);
-        }
-     }
-     System.out.println("Successfully parsed " + successfulParses + " files.");
-     System.out.println("Failed on parsed " + (args.length-successfulParses) + " files.");
-     for (String filename : failures) {
-      System.out.println("Failed on: " + filename);
-     }
-
-   }
-
-   static Node parseFile(String name) throws IOException {
-     Path path = FileSystems.getDefault().getPath(name);
-     PARSER_CLASS parser = new PARSER_CLASS(path);
-     parser.GrammarSpec();
-     return parser.rootNode();
-   }
-
-   static void usage() {
-      System.out.println("java Antlr4Parser <FILENAME>");
-   }
-}
 
 GrammarSpec :
     GrammarDecl
@@ -558,5 +520,46 @@ INJECT LEXER_CLASS : {
 
    void setActionBlockStart(int actionBlockStart) {
        this.actionBlockStart = actionBlockStart;
+   }
+}
+
+INJECT PARSER_CLASS :
+   import java.nio.file.FileSystems;
+{
+   static public void main(String[] args) {
+     if (args.length == 0) {
+      usage();
+      return;
+     }
+     int successfulParses = 0;
+     java.util.List<String> failures = new ArrayList<>();
+     for (int i = 0;i<args.length;i++) {
+        try {
+           Node root = parseFile(args[i]);
+           System.out.println("Parsed " + args[i] + " successfully.");
+           if (args.length == 1) root.dump();
+           successfulParses++;
+        } catch (Exception e) {
+           System.out.println("Failed on " + args[i]);
+           e.printStackTrace();
+           failures.add(args[i]);
+        }
+     }
+     System.out.println("Successfully parsed " + successfulParses + " files.");
+     System.out.println("Failed on parsed " + (args.length-successfulParses) + " files.");
+     for (String filename : failures) {
+      System.out.println("Failed on: " + filename);
+     }
+   }
+
+   static Node parseFile(String name) throws IOException {
+     Path path = FileSystems.getDefault().getPath(name);
+     PARSER_CLASS parser = new PARSER_CLASS(path);
+     parser.GrammarSpec();
+     return parser.rootNode();
+   }
+
+   static void usage() {
+      System.out.println("java Antlr4Parser <FILENAME>");
    }
 }
