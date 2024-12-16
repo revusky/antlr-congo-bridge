@@ -47,8 +47,8 @@ INJECT PARSER_CLASS :
 GrammarSpec :
     GrammarDecl
     (PrequelConstruct)*
-    (LexerRuleSpec =>|| | ParserRuleSpec)*
-//    (ParserRuleSpec =>|| | LexerRuleSpec)*
+    (LexerRuleSpec | ParserRuleSpec)*
+//    (ParserRuleSpec | LexerRuleSpec)*
     (ModeSpec)*
     <EOF>
 ;    
@@ -127,6 +127,7 @@ ModeSpec :
 ParserRuleSpec :
    [RuleModifiers]
    <IDENTIFIER>
+   ENSURE {Character.isUpperCase(getToken(0).charAt(0))}
    [ArgActionBlock]
    [RuleReturns]
    [ThrowsSpec]
@@ -141,6 +142,8 @@ ParserRuleSpec :
 LexerRuleSpec :
     [<FRAGMENT>]
     <IDENTIFIER>
+    ENSURE {Character.isUpperCase(getToken(0).charAt(0))}
+    =>||
     [OptionsSpec]
     <COLON>
     LexerRuleBlock
