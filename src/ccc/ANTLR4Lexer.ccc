@@ -63,7 +63,7 @@ TOKEN #Delimiter :
 TOKEN #Keyword :
   <CATCH : "catch">
   |
-  <CHANNELS : "channels" (<WHITESPACE>) "{"> #Channels
+  <CHANNELS : "channels" (<WHITESPACE>)? "{"> #Channels
   |
   <FINALLY : "finally">
   |
@@ -79,7 +79,7 @@ TOKEN #Keyword :
   |
   <MODE : "mode">
   |
-  <OPTIONS : "options" (<WHITESPACE>) "{"> #Options
+  <OPTIONS : "options" (<WHITESPACE>)? "{"> #Options
   |
   <PARSER : "parser">
   |
@@ -95,7 +95,7 @@ TOKEN #Keyword :
   |
   <THROWS : "throws">
   |
-  <TOKENS : "tokens" (<WHITESPACE>) "{"> #Tokens
+  <TOKENS : "tokens" (<WHITESPACE>)? "{"> #Tokens
 ;
 
 TOKEN #Literal :
