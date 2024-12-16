@@ -1,8 +1,12 @@
+#if false
+   A Congo grammar for ANTLR4 grammars. 
+   This is free to use, though acknowledgement
+   would be nice.
+#endif
+
 DEFAULT_LEXICAL_STATE=ANTLR;
 TAB_SIZE=4;
 ENSURE_FINAL_EOL;
-
-INCLUDE "ANTLR4Lexer.ccc"
 
 INJECT PARSER_CLASS :
    import java.nio.file.FileSystems;
@@ -363,3 +367,194 @@ LabeledLexerElement :
 LexerCommands : 
    <RARROW> LexerCommand (<COMMA> LexerCommand)*
 ;
+
+SKIP :
+  <WHITESPACE : (" "| "\t"| "\n"| "\r"| "\f")+> #Whitespace
+;
+
+UNPARSED #Comment :
+  < ?BLOCK_COMMENT : "/*" (~[])* "*/" > #BlockComment
+  |
+  < LINE_COMMENT : "//" (~["\n"])* "\n" > #LineComment
+;
+
+TOKEN #Operator :
+  < ASSIGN : "=" >
+  |
+  < AT : "@" > 
+  |
+  < COLON : ":" > #Colon
+  |
+  < DOUBLE_COLON : "::" > #DColon
+  |
+  < NOT : "~"> #Tilde
+  |
+  < OR : "|" > #Pipe
+  |
+  < POUND : "#"> #Pound
+  |
+  < PLUS : "+" > #Plus
+  |
+  < PLUS_ASSIGN : "+=" > #PlusAssign 
+  |
+  < QUESTION : "?" > #Question
+  |
+  < RANGE : ".." > #Range
+  |
+  < RARROW : "->" > #RArrow
+  |
+  < STAR : "*" > #Star
+;
+
+TOKEN #Delimiter :
+  < COMMA : "," >
+  |
+  < DOT : "." > 
+  |
+  < LBRACE : "{">
+  |
+  < LBRACKET : "[">
+  |
+  < LPAREN : "(" >
+  |
+  < LT : "<" >
+  |
+  < GT : ">" >
+  |
+  < RBRACE : "}">
+  |
+  < RBRACKET : "]">
+  |
+  < RPAREN : ")" >
+  |
+  < SEMICOLON : ";" > 
+;
+
+TOKEN #Keyword :
+  <CATCH : "catch">
+  |
+  <CHANNELS : "channels" (<WHITESPACE>)? "{"> #Channels
+  |
+  <FINALLY : "finally">
+  |
+  <FRAGMENT : "fragment">
+  |
+  <GRAMMAR : "grammar">
+  |
+  <IMPORT : "import">
+  |
+  <LEXER : "lexer">
+  |
+  <LOCALS : "locals">
+  |
+  <MODE : "mode">
+  |
+  <OPTIONS : "options" (<WHITESPACE>)? "{"> #Options
+  |
+  <PARSER : "parser">
+  |
+  <PRIVATE : "private">
+  |
+  <PROTECTED : "protected">
+  |
+  <PUBLIC : "public">
+  |
+  <RETURNS : "returns">
+  |
+  <THROW : "throw">
+  |
+  <THROWS : "throws">
+  |
+  <TOKENS : "tokens" (<WHITESPACE>)? "{"> #Tokens
+;
+
+TOKEN #Literal :
+  < INT: "0" | ["1"-"9"](["0"-"9"])* > #DecimalNumeral
+  |  
+  < #HEX_DIGIT : ["0"-"9","a"-"f","A"-"F"]>
+  |
+  < #STRING_ESCAPE:
+      '\\'
+      (
+        ["n","t","b","r","f", "\\","'",'"']
+        |
+        "u" (<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>(<HEX_DIGIT>)?)?)?)?
+      )
+  >
+  |
+  < STRING_LITERAL:
+      "'"
+      (   (~["'","\\","\n","\r"])
+          |
+          <STRING_ESCAPE>
+      )*
+      "'"
+  > #StringLiteral
+
+;
+
+INCLUDE JAVA_IDENTIFIER_DEF
+
+TOKEN :
+  < IDENTIFIER : <JAVA_IDENTIFIER_START> (<JAVA_IDENTIFIER_PART>)* > #Identifier
+;
+
+<IN_LEXER_CHAR_SET>
+MORE :
+   < (~["\\","]","\\"] | ("\\" ~["\n","\r"]))+>
+;
+
+<IN_LEXER_CHAR_SET>
+TOKEN :
+   <CONTENT : "]" > {matchedToken.truncate(1);}
+;
+
+
+<IN_ACTION_BLOCK,IN_ARG_ACTION_BLOCK>
+UNPARSED :
+   < OPEN_CURLY : "{"> {braceNesting++;}
+;
+
+<IN_ACTION_BLOCK>
+TOKEN :
+   < ACTION : "}"> {
+        if (braceNesting >0) {
+           braceNesting--;
+           matchedToken.setUnparsed(true);
+        }
+        else {
+           matchedToken.setBeginOffset(actionBlockStart);
+           matchedToken.truncate(1);
+        }
+   }
+;
+<IN_ARG_ACTION_BLOCK>
+TOKEN :
+   < ARG_ACTION : "]"> {
+        if (braceNesting >0) {
+           braceNesting--;
+           matchedToken.setUnparsed(true);
+        }
+        else {
+           matchedToken.setBeginOffset(actionBlockStart);
+           matchedToken.truncate(1);
+        }
+   }
+;
+
+<IN_ACTION_BLOCK, IN_ARG_ACTION_BLOCK>
+SKIP :
+   <#DQSTRING_LITERAL : '"' (~['"'] | '\\"')* '"'>
+   |
+   < SLITERAL : <STRING_LITERAL> | <DQSTRING_LITERAL> >
+   |
+   < ANY : ~[] >
+;
+
+INJECT LEXER_CLASS : {
+   private int actionBlockStart, braceNesting;
+
+   void setActionBlockStart(int actionBlockStart) {
+       this.actionBlockStart = actionBlockStart;
+   }
+}
