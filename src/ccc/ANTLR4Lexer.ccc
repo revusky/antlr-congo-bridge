@@ -139,9 +139,12 @@ TOKEN :
    <CONTENT : "]" > {matchedToken.truncate(1);}
 ;
 
+
 <IN_ACTION_BLOCK>
 UNPARSED :
-   < SCHMOO : (~["{","}"])+ >
+   <#DQSTRING_LITERAL : '"' (~['"'] | '\\"')* '"'>
+   |
+   < SLITERAL : <STRING_LITERAL> | <DQSTRING_LITERAL> >
    |
    < OPEN_CURLY : "{"> {braceNesting++;}
 ;
@@ -158,6 +161,11 @@ TOKEN :
            matchedToken.truncate(1);
         }
    }
+;
+
+<IN_ACTION_BLOCK>
+SKIP :
+   < ANY : ~[] >
 ;
 
 INJECT LEXER_CLASS : {

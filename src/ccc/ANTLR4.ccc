@@ -13,7 +13,7 @@ INJECT PARSER_CLASS :
       return;
      }
      int successfulParses = 0;
-     int unsuccessfulParses = 0;
+     java.util.List<String> failures = new ArrayList<>();
      for (int i = 0;i<args.length;i++) {
         try {
            Node root = parseFile(args[i]);
@@ -23,11 +23,15 @@ INJECT PARSER_CLASS :
         } catch (Exception e) {
            System.out.println("Failed on " + args[i]);
            e.printStackTrace();
-           unsuccessfulParses++;
+           failures.add(args[i]);
         }
      }
      System.out.println("Successfully parsed " + successfulParses + " files.");
-     System.out.println("Failed on " + unsuccessfulParses + " files.");
+     System.out.println("Failed on parsed " + (args.length-successfulParses) + " files.");
+     for (String filename : failures) {
+      System.out.println("Failed on: " + filename);
+     }
+
    }
 
    static Node parseFile(String name) throws IOException {
@@ -151,7 +155,7 @@ LexerRuleSpec :
 ;    
 
 Action_ :
-   <AT> [ActionScopeName <DOUBLE_COLON>] <IDENTIFIER> ActionBlock
+   <AT> [ActionScopeName <DOUBLE_COLON> =>||] <IDENTIFIER> ActionBlock
 ;
 
 ActionScopeName :
