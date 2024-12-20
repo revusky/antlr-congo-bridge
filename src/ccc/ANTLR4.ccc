@@ -132,7 +132,7 @@ ActionBlock :
 ;
 
 ArgActionBlock :
-    <LBRACKET>
+    <LBRACKET> {token_source.setActionBlockStart(1+lastConsumedToken.getBeginOffset());}
     LEXICAL_STATE IN_ARG_ACTION_BLOCK (<ARG_ACTION>)
     <RBRACKET>
 ;
