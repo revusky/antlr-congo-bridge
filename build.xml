@@ -1,0 +1,26 @@
+<project name="ANTLR4 Parser" default="compile">
+
+ <target name="clean">
+    <delete dir="src/generated" />
+  </target>
+
+  <target name="init">
+    <uptodate property="ANTLR4Parser.uptodate" targetfile="src/generated/antlr4parser/ANTLR4Parser.java">
+      <srcfiles dir="src/ccc" includes="*.ccc" />
+    </uptodate>
+  </target>
+
+  <target name="parser-gen" depends="init" unless="ANTLR4Parser.uptodate">
+    <java jar="bin/congocc.jar" failonerror="true" fork="true">
+      <assertions>
+        <enable />
+      </assertions>
+      <arg value="-n" />
+      <arg value="src/ccc/ANTLR4.ccc" />
+    </java>
+  </target>
+
+  <target name="compile" depends="init,parser-gen">
+    <javac srcdir="src/generated" failonerror="true" release="8" classpath="src/generated:bin/congocc.jar" debug="on" optimize="off" includeantruntime="no" fork="true" />
+  </target>
+</project>

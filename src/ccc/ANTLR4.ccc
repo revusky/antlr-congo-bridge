@@ -11,6 +11,8 @@ DEFAULT_LEXICAL_STATE=ANTLR;
 SMART_NODE_CREATION=false;
 TAB_SIZE=4;
 ENSURE_FINAL_EOL;
+BASE_SRC_DIR="../generated";
+//ROOT_API_PACKAGE="org.congocc.parser";
 
 GrammarSpec :
     GrammarDecl
@@ -18,13 +20,13 @@ GrammarSpec :
     (LexerRuleSpec | ParserRuleSpec)*
     (ModeSpec)*
     <EOF>
-;    
+;
 
 GrammarDecl :
     GrammarType
     <IDENTIFIER>
     <SEMICOLON>
-;    
+;
 
 GrammarType :
     [<LEXER>|<PARSER>] <GRAMMAR>
@@ -52,7 +54,7 @@ Option :
     <IDENTIFIER>
     <ASSIGN>
     OptionValue
-;    
+;
 
 OptionValue :
     <IDENTIFIER>
@@ -69,11 +71,11 @@ DelegateGrammars :
     DelegateGrammar
     (<COMMA> DelegateGrammar)*
     <SEMICOLON>
-;    
+;
 
 DelegateGrammar :
    <IDENTIFIER> [<ASSIGN> <IDENTIFIER>]
-;   
+;
 
 IdList :
    <IDENTIFIER> (<COMMA> <IDENTIFIER> =>||)* [<COMMA>]
@@ -115,7 +117,7 @@ LexerRuleSpec :
     <COLON>
     LexerRuleBlock
     <SEMICOLON>
-;    
+;
 
 Action_ :
    <AT> [ActionScopeName <DOUBLE_COLON> =>||] <IDENTIFIER> ActionBlock
@@ -139,7 +141,7 @@ ArgActionBlock :
 
 ExceptionGroup :
    (ExceptionHandler)* [FinallyClause]
-;   
+;
 
 ExceptionHandler :
    <CATCH>
@@ -199,7 +201,7 @@ LexerRuleBlock :
 
 LexerAlt :
    (LexerElement)* [LexerCommands]
-; 
+;
 
 LexerElement :
    LabeledLexerElement [EbnfSuffix]
@@ -210,12 +212,12 @@ LexerElement :
    |
    ActionBlock [<QUESTION>]
 ;
-    
+
 EbnfSuffix :
    <QUESTION> [<QUESTION>]
-   | 
+   |
    <STAR> [<QUESTION>]
-   | 
+   |
    <PLUS> [<QUESTION>]
 ;
 
@@ -225,7 +227,7 @@ LexerBlock :
 
 CharacterRange :
    <STRING_LITERAL> <RANGE> =>|| <STRING_LITERAL>
-;   
+;
 
 Terminal :
    <IDENTIFIER> [ElementOptions]
@@ -237,19 +239,19 @@ ElementOptions :
    <LT> ElementOption (<COMMA> ElementOption)* <GT>
 ;
 
-ElementOption : 
+ElementOption :
    <IDENTIFIER> [<ASSIGN> (<IDENTIFIER> | <STRING_LITERAL>)]
 ;
 
-LexerAtom : 
+LexerAtom :
    CharacterRange
-   | 
+   |
    Terminal
-   | 
+   |
    NotSet
    |
    LexerCharSet
-   | 
+   |
    <DOT> [ElementOptions]
 ;
 
@@ -257,61 +259,61 @@ LexerCharSet :
    <LBRACKET>
    LEXICAL_STATE IN_LEXER_CHAR_SET (<CONTENT>)
    <RBRACKET>
-;   
+;
 
-NotSet : 
+NotSet :
    <NOT> (SetElement | BlockSet)
 ;
 
-BlockSet : 
+BlockSet :
    <LPAREN> SetElement (<OR> SetElement)* <RPAREN>
 ;
 
-SetElement : 
+SetElement :
    <IDENTIFIER> [ElementOptions]
-   | 
+   |
    CharacterRange
-   | 
+   |
    <STRING_LITERAL> [ElementOptions]
    |
    LexerCharSet
 ;
 
-Element : 
+Element :
    LabeledElement [EbnfSuffix]
-   | 
+   |
    Atom [EbnfSuffix]
-   | 
+   |
    Ebnf
-   | 
+   |
    ActionBlock [<QUESTION>]
 ;
 
-LabeledElement : 
+LabeledElement :
     <IDENTIFIER> (<ASSIGN> | <PLUS_ASSIGN>) =>|| (Atom | Block)
 ;
 
 Atom :
    Ruleref
-   | 
+   |
    Terminal
-   | 
+   |
    NotSet
-   | 
+   |
    <DOT> [ElementOptions]
 ;
 
-Ebnf : 
+Ebnf :
    Block [EbnfSuffix]
 ;
 
-Ruleref : 
+Ruleref :
    <IDENTIFIER> [ArgActionBlock] [ElementOptions]
 ;
 
-Block : 
-   <LPAREN> 
-   [[OptionsSpec] (RuleAction)* <COLON>] AltList 
+Block :
+   <LPAREN>
+   [[OptionsSpec] (RuleAction)* <COLON>] AltList
    <RPAREN>
 ;
 
@@ -323,7 +325,7 @@ LabeledLexerElement :
    <IDENTIFIER> (<ASSIGN> | <PLUS_ASSIGN>) =>|| (LexerAtom | LexerBlock)
 ;
 
-LexerCommands : 
+LexerCommands :
    <RARROW> LexerCommand (<COMMA> LexerCommand)*
 ;
 
@@ -348,7 +350,7 @@ TOKEN :
 TOKEN #Operator :
   < ASSIGN : "=" >
   |
-  < AT : "@" > 
+  < AT : "@" >
   |
   < COLON : ":" > #Colon
   |
@@ -362,7 +364,7 @@ TOKEN #Operator :
   |
   < PLUS : "+" > #Plus
   |
-  < PLUS_ASSIGN : "+=" > #PlusAssign 
+  < PLUS_ASSIGN : "+=" > #PlusAssign
   |
   < QUESTION : "?" > #Question
   |
@@ -376,7 +378,7 @@ TOKEN #Operator :
 TOKEN #Delimiter :
   < COMMA : "," >
   |
-  < DOT : "." > 
+  < DOT : "." >
   |
   < LBRACE : "{">
   |
@@ -394,7 +396,7 @@ TOKEN #Delimiter :
   |
   < RPAREN : ")" >
   |
-  < SEMICOLON : ";" > 
+  < SEMICOLON : ";" >
 ;
 
 TOKEN #Keyword :
@@ -437,7 +439,7 @@ TOKEN #Keyword :
 
 TOKEN #Literal :
   < INT: "0" | ["1"-"9"](["0"-"9"])* > #DecimalNumeral
-  |  
+  |
   < #HEX_DIGIT : ["0"-"9","a"-"f","A"-"F"]>
   |
   < #STRING_ESCAPE:
@@ -526,7 +528,8 @@ INJECT LEXER_CLASS : {
 INJECT PARSER_CLASS :
    import java.nio.file.FileSystems;
 {
-   static public void main(String[] args) {
+   //Just a little test harness
+   public static void main(String[] args) {
      if (args.length == 0) {
       usage();
       return;
@@ -552,7 +555,7 @@ INJECT PARSER_CLASS :
      }
    }
 
-   static Node parseFile(String name) throws IOException {
+   public static Node parseFile(String name) throws IOException {
      Path path = FileSystems.getDefault().getPath(name);
      PARSER_CLASS parser = new PARSER_CLASS(path);
      parser.GrammarSpec();
